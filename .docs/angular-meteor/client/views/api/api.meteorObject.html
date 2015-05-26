@@ -8,17 +8,27 @@
     <do-nothing>
         {{#markdown}}
 
-# $meteor.object
+# $meteor.object   /    $scope.$meteorObject
 
 A service that wraps a Meteor object to enable reactivity within AngularJS.
 Finds the first document that matches the selector, as ordered by sort and skip options.
 Wraps [collection.findOne](http://docs.meteor.com/#/full/findone)
+
+Calling $scope.$meteorObject is exactly the same but additionally it will automatically stop the object when the scope is destroyed; therefore this is the recommended method.
 
 ----
 
 ## Usage
 
     $meteor.object(collection, selector, auto)
+
+    $scope.$meteorObject(collection, selector, auto)
+
+  If you documents are saved with objects IDs (and not strings:  <a href="http://docs.meteor.com/#/full/mongo_collection" >see here </a>),
+you should use <code> new Mongo.objectID  </code> to retieve the object.
+
+    $meteor.object (collection, new Meteor.ObjectID (stringId), auto);
+
 
 ### Arguments
 
@@ -76,6 +86,8 @@ Wraps [collection.findOne](http://docs.meteor.com/#/full/findone)
       <li><code><span class="pln">save</span></code> — saves the current value of the object to the server.
         returns a promise with an error in case for an error or a number of successful docs changed in case of success.</li>
       <li><code><span class="pln">reset</span></code> — reset the current value of the object to the one in the server.</li>
+	    <li><code><span class="pln">subscribe</span></code> — <a href="/api/AngularMeteorObject">Go to reference</a></li>
+	    <li><code><span class="pln">getRawObject</span></code> — <a href="/api/AngularMeteorObject">Go to reference</a></li>
     </ul>
   </td>
 </tr>
@@ -97,7 +109,8 @@ Wraps [collection.findOne](http://docs.meteor.com/#/full/findone)
 
           $scope.party = $meteor.object(Parties, $stateParams.partyId);
 
-          $scope.partyNotAuto = $meteor.object(Parties, $stateParams.partyId, false);
+
+          $scope.partyNotAuto = $scope.$meteorObject(Parties, $stateParams.partyId, false);
 
           $scope.save = function() {
             $scope.partyNotAuto.save().then(function(numberOfDocs){
@@ -122,3 +135,6 @@ Wraps [collection.findOne](http://docs.meteor.com/#/full/findone)
 
   </div>
 </template>
+
+
+

@@ -26,7 +26,7 @@
 
 Right now our app has no privacy, every user can see all the parties on the screen.
 
-So let's add a 'public' flag on parties - if a party is public we will let anyone see it, but if a party if private, only the owner can see it.
+So let's add a 'public' flag on parties - if a party is public we will let anyone see it, but if a party is private, only the owner can see it.
 
 First we need to remove the 'autopublish' Meteor package.
 
@@ -87,20 +87,21 @@ Right now we don't need the promise so let's use the second way:
 It is the same as:
     $meteor.subscribe('parties');
     $scope.parties = $meteor.collection(Parties);
-    
-But it is a *good practise* to resolve a subscription in state's resolve function:
-    .state('parties', {
-      url: '/parties',
-      templateUrl: 'client/parties/views/parties-list.ng.html',
-      controller: 'PartiesListCtrl',
-      resolve : {
-        'subscribe' : [
-          '$meteor',
-          ($meteor) ->
-            $meteor.subscribe('parties');
-        ]
-      }
-    })
+
+But it is a *good practice* to resolve a subscription in state's resolve function:
+
+     .state('parties', {
+        url: '/parties',
+        templateUrl: 'client/parties/views/parties-list.ng.html',
+        controller: 'PartiesListCtrl',
+        resolve: {
+          'subscribe': [
+            '$meteor', function($meteor) {
+              return $meteor.subscribe('parties');
+            }
+          ]
+        }
+     });
 
 * Our publish function can also take parameters.  In that case, we would also need to pass the parameters from the client.
 For more information about the $meteor.subscribe service [click here](http://angularjs.meteor.com/api/subscribe) or the subscribe function of [AngularMeteorCollection](/api/AngularMeteorCollection).
@@ -169,7 +170,8 @@ So here again we use the Mongo API to return all the users (find with an empty o
 The emails field holds all the user's email addresses, and the profile might hold more optional information like the user's name
 (in our case, if the user logged in with the Facebook login, the accounts-facebook package puts the user's name from Facebook automatically into that field).
 
-Now let's subscribe to that publish Method.  in the client->parties->controllers->partyDetails.js file add the following line:
+Now let's subscribe to that publish Method.  in the client->parties->controllers->partyDetails.js file add the following line inside the controller.
+If you just add to the end you will get an uncaught reference $scope not defined:
 
     $scope.users = $meteor.collection(Meteor.users, false).subscribe('users');
 
@@ -178,7 +180,7 @@ Now let's subscribe to that publish Method.  in the client->parties->controllers
 * Notice that we passes false in the second parameter. that means that we don't want to update that collection from the client.
 * Calling [AngularMeteorCollection's](/api/AngularMeteorCollection) subscribe function.
 
-Also, let's add a subscription to the party in case we get strait to there and won't go through the parties controller:
+Also, let's add a subscription to the party in case we get straight to there and won't go through the parties router:
 
     $scope.party = $meteor.object(Parties, $stateParams.partyId).subscribe('parties');
 
@@ -199,7 +201,103 @@ Add this ng-repeat list to the end of parties-details.ng.html:
 
 <btf-markdown>
 
-Run the app and see the list of all the users' emails.
+Run the app and see the list of all the users' emails that created a login and password and did not use a service to login.
+
+* The structure of the Users collection is different between regular email-password, Facebook, Google etc.
+
+The Document structure looks like this (notice where the email is in each one):
+
+__`Email-Password`:__
+
+    {
+      "_id" : "8qJt6dRSNDHBuqpXu",
+      "createdAt" : ISODate("2015-05-26T00:29:05.109-07:00"),
+      "services" : {
+        "password" : {
+          "bcrypt" : "$2a$10$oSykELjSzcoFWXZTwI5.lOl4BsB1EfcR8RbEm/KsS3zA4x5vlwne6"
+        },
+        "resume" : {
+          "loginTokens" : [
+            {
+              "when" : ISODate("2015-05-26T00:29:05.112-07:00"),
+              "hashedToken" : "6edmW0Wby2xheFxyiUOqDYYFZmOtYHg7VmtXUxEceHg="
+            }
+          ]
+        }
+      },
+      "emails" : [
+        {
+          "address" : "email@email.com",
+          "verified" : false
+        }
+      ]
+    }
+
+__`Facebook`:__
+
+    {
+      "_id" : "etKoiD8MxkQTjTQRY",
+      "createdAt" : ISODate("2015-05-25T17:42:16.850-07:00"),
+      "services" : {
+        "facebook" : {
+          "accessToken" : "CAAM10fSvI...",
+          "expiresAt" : 1437770457288.0000000000000000,
+          "id" : "10153317814289291",
+          "email" : "email@email.com",
+          "name" : "FirstName LastName",
+          "first_name" : "FirstName",
+          "last_name" : "LastName",
+          "link" : "https://www.facebook.com/app_scoped_user_id/foo"
+          "gender" : "male",
+          "locale" : "en_US"
+        },
+        "resume" : {
+          "loginTokens" : []
+        }
+      },
+      "profile" : {
+        "name" : "First Name LastName"
+      }
+    }
+
+__`Google`:__
+
+    {
+      "_id" : "337r4wwSRWe5B6CCw",
+      "createdAt" : ISODate("2015-05-25T22:53:32.172-07:00"),
+      "services" : {
+        "google" : {
+          "accessToken" : "ya29.fwHSzHvC...",
+          "idToken" : "eyJhbGciOiJSUzI1NiIs...",
+          "expiresAt" : 1432624691685.0000000000000000,
+          "id" : "107497376789285885122",
+          "email" : "email@email.com",
+          "verified_email" : true,
+          "name" : "FirstName LastName",
+          "given_name" : "FirstName",
+          "family_name" : "LastName",
+          "picture" : "https://lh5.googleusercontent.com/-foo.jpeg
+          "locale" : "en",
+          "gender" : "male"
+        },
+        "resume" : {
+          "loginTokens" : [
+            {
+              "when" : ISODate("2015-05-25T23:18:11.788-07:00"),
+              "hashedToken" : "NaKS2Zeermw+bPlMLhaihsNu6jPaW5+ucFDF2BXT4WQ="
+            }
+          ]
+        }
+      },
+      "profile" : {
+        "name" : "First Name LastName"
+      }
+    }
+
+
+Right now it means that the emails of the users that logged in with with email-password will be displayed.
+
+In the chapter of Angular filters we will change the display code to show all emails.
 
 
 # Understanding Meteor's Publish-Subscribe
